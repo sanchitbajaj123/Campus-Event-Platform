@@ -1,0 +1,5 @@
+{
+  "name": "Campus Event Platform",
+  "description": "A real-time campus event management platform with role-based access for students and organizers. Students can browse and register for events, while organizers can manage registrations. Features live attendee count updates.",
+  "requestFramePermissions": []
+}
