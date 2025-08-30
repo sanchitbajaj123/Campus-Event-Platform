@@ -160,7 +160,10 @@ const OrganizerDashboardPage: React.FC = () => {
 
     const filteredRegistrations = useMemo(() => {
         if (selectedEventId === 'all') return registrations;
-        return registrations.filter(r => r.eventId === selectedEventId);
+        return registrations.filter(r => {
+            const rEventId = r.eventId && (r.eventId._id ? r.eventId._id : r.eventId);
+            return rEventId === selectedEventId;
+        });
     }, [registrations, selectedEventId]);
 
     const pendingRegistrations = useMemo(() => filteredRegistrations.filter(r => (r.status === RegistrationStatus.PENDING || r.status === 'PENDING')), [filteredRegistrations]);
@@ -231,9 +234,9 @@ const OrganizerDashboardPage: React.FC = () => {
               className="block w-full md:w-auto pl-3 pr-10 py-2 text-base border-neutral-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md shadow-sm"
             >
               <option value="all">All Events</option>
-              {events.map((event: Event) => (
-                <option key={event.id} value={event.id}>{event.title}</option>
-              ))}
+                            {events.map((event: Event) => (
+                                <option key={event._id || event.id} value={event._id || event.id}>{event.title}</option>
+                            ))}
             </select>
         </div>
       </div>
@@ -251,7 +254,10 @@ const OrganizerDashboardPage: React.FC = () => {
                 <tr key={event._id || event.id} className="hover:bg-neutral-50 transition-colors">
                     <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{event.title}</td>
                     <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{new Date(event.date).toLocaleString()}</td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{registrations.filter(r => r.eventId === (event._id || event.id) && r.status === RegistrationStatus.APPROVED).length} / {event.maxCapacity}</td>
+                    <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{registrations.filter(r => {
+                        const rEventId = r.eventId && (r.eventId._id ? r.eventId._id : r.eventId);
+                        return rEventId === (event._id || event.id) && r.status === RegistrationStatus.APPROVED;
+                    }).length} / {event.maxCapacity}</td>
                     <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button onClick={() => deleteEvent(event._id || event.id)} className="text-red-600 hover:text-red-800 transition-colors">Delete</button>
                     </td>
