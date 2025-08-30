@@ -15,7 +15,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
     return <Navigate to="/login" replace />;
   }
 
-  if (!allowedRoles.includes(currentUser.role)) {
+
+  // Accept both enum and string role values for backend compatibility
+  const allowedRoleStrings = allowedRoles.map(r =>
+    typeof r === 'string' ? r :
+    r === 'ADMIN' || r === 'Admin' ? 'ADMIN' :
+    r === 'ORGANIZER' || r === 'Organizer' ? 'ORGANIZER' :
+    r === 'STUDENT' || r === 'Student' ? 'STUDENT' : r
+  );
+  const userRole = (currentUser.role || '').toUpperCase();
+  if (!allowedRoleStrings.map(r => r.toUpperCase()).includes(userRole)) {
     return (
         <div className="text-center p-10 bg-white border border-yellow-300/50 shadow-sm rounded-xl">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">

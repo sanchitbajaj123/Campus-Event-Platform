@@ -12,15 +12,17 @@ export enum RegistrationStatus {
 }
 
 export interface User {
-  id: number;
+  _id?: string;
+  id?: number;
   name: string;
-  role: UserRole;
+  role: UserRole | string;
   email: string;
-  password?: string; // Should be hashed in a real app
+  password?: string;
 }
 
 export interface Event {
-  id: number;
+  _id?: string;
+  id?: number;
   title: string;
   description: string;
   longDescription: string;
@@ -32,8 +34,9 @@ export interface Event {
 }
 
 export interface Registration {
-  id: number;
-  eventId: number;
-  userId: number;
-  status: RegistrationStatus;
+  _id?: string;
+  id?: number;
+  eventId: string;
+  userId: string;
+  status: RegistrationStatus | string;
 }

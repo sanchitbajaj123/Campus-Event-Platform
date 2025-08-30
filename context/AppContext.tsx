@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { User, Event, Registration, UserRole, RegistrationStatus } from '../types';
-import { USERS, EVENTS } from '../constants';
+
 
 interface AppContextType {
   currentUser: User | null;
@@ -26,7 +26,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// LocalStorage Keys
+
 const USERS_STORAGE_KEY = 'campus_events_users';
 const EVENTS_STORAGE_KEY = 'campus_events_events';
 const REGISTRATIONS_STORAGE_KEY = 'campus_events_registrations';
@@ -35,60 +35,28 @@ const REGISTRATIONS_STORAGE_KEY = 'campus_events_registrations';
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Lazy initialize state from localStorage or use default constants
-  const [users, setUsers] = useState<User[]>(() => {
-    try {
-      const savedUsers = window.localStorage.getItem(USERS_STORAGE_KEY);
-      return savedUsers ? JSON.parse(savedUsers) : USERS;
-    } catch (error) {
-      console.error("Error reading users from localStorage", error);
-      return USERS;
-    }
-  });
 
-  const [events, setEvents] = useState<Event[]>(() => {
-    try {
-      const savedEvents = window.localStorage.getItem(EVENTS_STORAGE_KEY);
-      const parsedEvents = savedEvents ? JSON.parse(savedEvents) : EVENTS;
-      return parsedEvents.sort((a: Event, b: Event) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    } catch (error) {
-      console.error("Error reading events from localStorage", error);
-      return EVENTS.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }
-  });
 
-  const [registrations, setRegistrations] = useState<Registration[]>(() => {
-    try {
-      const savedRegistrations = window.localStorage.getItem(REGISTRATIONS_STORAGE_KEY);
-      // If no registrations are saved, create some initial ones for demonstration
-      if (savedRegistrations) {
-        return JSON.parse(savedRegistrations);
-      }
-      return [
-        { id: 1, eventId: 1, userId: 2, status: RegistrationStatus.APPROVED },
-        { id: 2, eventId: 1, userId: 3, status: RegistrationStatus.PENDING },
-        { id: 3, eventId: 2, userId: 2, status: RegistrationStatus.APPROVED },
-      ];
-    } catch (error) {
-      console.error("Error reading registrations from localStorage", error);
-      return [];
-    }
-  });
+  const [users, setUsers] = useState<User[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
 
-  // Persist state to localStorage whenever it changes
-  useEffect(() => {
-    window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-  }, [users]);
-  
-  useEffect(() => {
-    window.localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events));
-  }, [events]);
 
   useEffect(() => {
-    window.localStorage.setItem(REGISTRATIONS_STORAGE_KEY, JSON.stringify(registrations));
-  }, [registrations]);
+    fetch('http://localhost:5000/api/users').then(res => res.json()).then(setUsers);
+    fetch('http://localhost:5000/api/events').then(res => res.json()).then(setEvents);
+    fetch('http://localhost:5000/api/registrations').then(res => res.json()).then(setRegistrations);
+  }, []);
 
-  // Simulate real-time new registrations
+
+
+  const refreshAll = useCallback(() => {
+    fetch('http://localhost:5000/api/users').then(res => res.json()).then(setUsers);
+    fetch('http://localhost:5000/api/events').then(res => res.json()).then(setEvents);
+    fetch('http://localhost:5000/api/registrations').then(res => res.json()).then(setRegistrations);
+  }, []);
+
+
   useEffect(() => {
     const interval = setInterval(() => {
       const studentUsers = users.filter(u => u.role === UserRole.STUDENT);
@@ -114,56 +82,81 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           },
         ]);
       }
-    }, 5000); // New registration every 5 seconds
+  }, 5000);
 
     return () => clearInterval(interval);
   }, [users, events.length, registrations]);
 
-  const login = useCallback((email: string, password?: string) => {
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-    if (user) {
-      setCurrentUser(user);
+
+  const login = useCallback(async (email: string, password?: string) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (!res.ok) return false;
+      const user = await res.json();
+  setCurrentUser(user);
+  localStorage.setItem('lastLoggedInUser', JSON.stringify(user));
+  console.log('Logged in user:', user);
       return true;
+    } catch {
+      return false;
     }
-    return false;
-  }, [users]);
+  }, []);
   
   const logout = useCallback(() => {
     setCurrentUser(null);
   }, []);
 
-  const signUp = useCallback((name: string, email: string, password?: string) => {
-    const userExists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
-    if (userExists) {
-        return { success: false, message: 'An account with this email already exists.' };
-    }
-    const newUser: User = {
-      id: Date.now(),
-      name,
-      email,
-      password,
-      role: UserRole.STUDENT,
-    };
-    setUsers(prev => [...prev, newUser]);
-    setCurrentUser(newUser);
-    return { success: true };
-  }, [users]);
 
-  const addOrganizer = useCallback((name: string, email: string, password?: string) => {
-    const userExists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
-    if (userExists) {
-        return { success: false, message: 'An account with this email already exists.' };
+  const signUp = useCallback(async (name: string, email: string, password?: string) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+      if (!res.ok) {
+        let errMsg = 'Signup failed';
+        try {
+          const err = await res.json();
+          if (err.error && err.error.includes('duplicate key')) {
+            errMsg = 'Email is already registered.';
+          } else if (err.error) {
+            errMsg = err.error;
+          }
+        } catch {}
+        return { success: false, message: errMsg };
+      }
+      const user = await res.json();
+      setCurrentUser(user);
+      refreshAll();
+      return { success: true };
+    } catch (e) {
+      return { success: false, message: 'Signup failed' };
     }
-    const newOrganizer: User = {
-      id: Date.now(),
-      name,
-      email,
-      password,
-      role: UserRole.ORGANIZER,
-    };
-    setUsers(prev => [...prev, newOrganizer]);
-    return { success: true };
-  }, [users]);
+  }, [refreshAll]);
+
+
+  const addOrganizer = useCallback(async (name: string, email: string, password?: string) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role: 'ORGANIZER' })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        return { success: false, message: err.error };
+      }
+      refreshAll();
+      return { success: true };
+    } catch (e) {
+      return { success: false, message: 'Add organizer failed' };
+    }
+  }, [refreshAll]);
 
 
   const switchUser = useCallback((userId: number) => {
@@ -173,79 +166,85 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [users]);
 
-  const addEvent = useCallback((eventData: Omit<Event, 'id'>) => {
-    const newEvent: Event = {
-      id: Date.now(),
-      ...eventData,
-      maxCapacity: Number(eventData.maxCapacity),
-    };
-    setEvents(prev => [...prev, newEvent].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
-  }, []);
 
-  const deleteEvent = useCallback((eventId: number) => {
+  const addEvent = useCallback(async (eventData: Omit<Event, 'id'>) => {
+    await fetch('http://localhost:5000/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(eventData)
+    });
+    refreshAll();
+  }, [refreshAll]);
+
+
+  const deleteEvent = useCallback(async (eventId: string) => {
     if (window.confirm('Are you sure you want to delete this event? This will also remove all associated registrations.')) {
-      setEvents(prev => prev.filter(e => e.id !== eventId));
-      setRegistrations(prev => prev.filter(r => r.eventId !== eventId));
+      await fetch(`http://localhost:5000/api/events/${eventId}`, { method: 'DELETE' });
+      refreshAll();
     }
-  }, []);
+  }, [refreshAll]);
 
-  const deleteUser = useCallback((userId: number) => {
-    if (userId === currentUser?.id) {
-        alert("You cannot delete your own account.");
-        return;
+
+  const deleteUser = useCallback(async (userId: string) => {
+    if (userId === currentUser?._id) {
+      alert("You cannot delete your own account.");
+      return;
     }
     if (window.confirm('Are you sure you want to delete this user? This will remove them and all their event registrations.')) {
-        setUsers(prev => prev.filter(u => u.id !== userId));
-        setRegistrations(prev => prev.filter(r => r.userId !== userId));
+      await fetch(`http://localhost:5000/api/users/${userId}`, { method: 'DELETE' });
+      refreshAll();
     }
-  }, [currentUser]);
+  }, [currentUser, refreshAll]);
 
-  const registerForEvent = (eventId: number) => {
+
+  const registerForEvent = async (eventId: string) => {
     if (!currentUser) {
-        alert("You must be logged in to register for an event.");
-        return;
+      alert("You must be logged in to register for an event.");
+      return;
     }
     const alreadyRegistered = registrations.some(
-      r => r.eventId === eventId && r.userId === currentUser.id
+      r => r.eventId === eventId && r.userId === currentUser._id
     );
     if (alreadyRegistered) {
       alert("You are already registered or your registration is pending.");
       return;
     }
-    setRegistrations(prev => [
-      ...prev,
-      {
-        id: Date.now(),
-        eventId,
-        userId: currentUser.id,
-        status: RegistrationStatus.PENDING,
-      },
-    ]);
+    await fetch('http://localhost:5000/api/registrations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId, userId: currentUser._id, status: 'PENDING' })
+    });
+    refreshAll();
   };
 
-  const updateRegistrationStatus = (registrationId: number, status: RegistrationStatus) => {
-    setRegistrations(prev =>
-      prev.map(r => (r.id === registrationId ? { ...r, status } : r))
-    );
+
+  const updateRegistrationStatus = async (registrationId: string, status: RegistrationStatus) => {
+    await fetch(`http://localhost:5000/api/registrations/${registrationId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    refreshAll();
   };
 
-  const getEventById = useCallback((eventId: number) => {
-    return events.find(e => e.id === eventId);
+
+  const getEventById = useCallback((eventId: string) => {
+    return events.find(e => e._id === eventId);
   }, [events]);
 
-  const getUserById = useCallback((userId: number) => {
-    return users.find(u => u.id === userId);
+  const getUserById = useCallback((userId: string) => {
+    return users.find(u => u._id === userId);
   }, [users]);
 
-  const getRegistrationsForEvent = useCallback((eventId: number) => {
+  const getRegistrationsForEvent = useCallback((eventId: string) => {
     return registrations.filter(r => r.eventId === eventId);
   }, [registrations]);
 
-  const getApprovedAttendeeCount = useCallback((eventId: number) => {
+  const getApprovedAttendeeCount = useCallback((eventId: string) => {
     return registrations.filter(r => r.eventId === eventId && r.status === RegistrationStatus.APPROVED).length;
   }, [registrations]);
 
-  const getUserRegistrationStatus = useCallback((eventId: number, userId: number | undefined) => {
+  const getUserRegistrationStatus = useCallback((eventId: string, userId: string | undefined) => {
     if (!userId) return null;
     const registration = registrations.find(r => r.eventId === eventId && r.userId === userId);
     return registration ? registration.status : null;

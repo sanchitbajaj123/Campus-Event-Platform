@@ -20,15 +20,23 @@ const LoginPage: React.FC = () => {
   const { login } = useAppContext();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (!login(email, password)) {
-      setError('Invalid email or password. Please try again.');
-    } else {
-      navigate('/');
-    }
-  };
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError('');
+      const success = await login(email, password);
+      if (!success) {
+        setError('Invalid email or password. Please try again.');
+      } else {
+        // Get the user from local context after login
+        const user = JSON.parse(localStorage.getItem('lastLoggedInUser') || 'null');
+        // If not found in localStorage, fallback to context (for SSR or strict mode)
+        if (user && (user.role === 'ADMIN' || user.role === 'ORGANIZER')) {
+          navigate('/dashboard');
+        } else {
+          navigate('/');
+        }
+      }
+    };
 
   return (
     <div className="w-full max-w-md space-y-8">

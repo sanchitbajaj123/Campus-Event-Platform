@@ -28,13 +28,13 @@ const UsersIcon = () => (
 
 const EventCard: React.FC<EventCardProps> = ({ event }) => {
     const { getApprovedAttendeeCount } = useAppContext();
-    const attendeeCount = getApprovedAttendeeCount(event.id);
-    const formattedDate = new Date(event.date).toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric'
-    });
+        const attendeeCount = getApprovedAttendeeCount(event._id || event.id);
+        const formattedDate = new Date(event.date).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric'
+        });
 
-  return (
-    <Link to={`/event/${event.id}`} className="block group bg-white rounded-xl shadow-sm border border-neutral-200/80 overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300">
+    return (
+        <Link to={`/event/${event._id || event.id}`} className="block group bg-white rounded-xl shadow-sm border border-neutral-200/80 overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300">
         <div className="flex flex-col h-full">
             <div className="relative overflow-hidden">
                 <img className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" src={event.imageUrl} alt={event.title} />

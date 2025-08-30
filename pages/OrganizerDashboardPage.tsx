@@ -158,32 +158,34 @@ const OrganizerDashboardPage: React.FC = () => {
   const [showAddEventForm, setShowAddEventForm] = useState(false);
   const [showAddOrganizerModal, setShowAddOrganizerModal] = useState(false);
 
-  const filteredRegistrations = useMemo(() => {
-    if (selectedEventId === 'all') return registrations;
-    return registrations.filter(r => r.eventId === parseInt(selectedEventId));
-  }, [registrations, selectedEventId]);
+    const filteredRegistrations = useMemo(() => {
+        if (selectedEventId === 'all') return registrations;
+        return registrations.filter(r => r.eventId === selectedEventId);
+    }, [registrations, selectedEventId]);
 
-  const pendingRegistrations = useMemo(() => filteredRegistrations.filter(r => r.status === RegistrationStatus.PENDING), [filteredRegistrations]);
-  const processedRegistrations = useMemo(() => filteredRegistrations.filter(r => r.status !== RegistrationStatus.PENDING).sort((a,b) => b.id - a.id), [filteredRegistrations]);
+    const pendingRegistrations = useMemo(() => filteredRegistrations.filter(r => (r.status === RegistrationStatus.PENDING || r.status === 'PENDING')), [filteredRegistrations]);
+    const processedRegistrations = useMemo(() => filteredRegistrations.filter(r => (r.status !== RegistrationStatus.PENDING && r.status !== 'PENDING')).sort((a,b) => {
+        const aTime = a._id ? parseInt(a._id.toString().substring(0,8), 16) : 0;
+        const bTime = b._id ? parseInt(b._id.toString().substring(0,8), 16) : 0;
+        return bTime - aTime;
+    }), [filteredRegistrations]);
   
-  const RegistrationRow = useCallback(({ registration }: { registration: Registration }) => {
-    const user = getUserById(registration.userId);
-    const event = getEventById(registration.eventId);
-
-    if (!user || !event) return null;
-    
-    return (
-        <tr className="hover:bg-neutral-50 transition-colors">
-            <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{user.name}</td>
-            <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{event.title}</td>
-            <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{new Date(registration.id).toLocaleDateString()}</td>
-            <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                <button onClick={() => updateRegistrationStatus(registration.id, RegistrationStatus.APPROVED)} className="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded-md text-xs font-semibold shadow-sm transition-colors">Approve</button>
-                <button onClick={() => updateRegistrationStatus(registration.id, RegistrationStatus.REJECTED)} className="text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded-md text-xs font-semibold shadow-sm transition-colors">Reject</button>
-            </td>
-        </tr>
-    );
-  }, [getUserById, getEventById, updateRegistrationStatus]);
+    const RegistrationRow = useCallback(({ registration }: { registration: Registration }) => {
+        const user = getUserById(registration.userId);
+        const event = getEventById(registration.eventId);
+        if (!user || !event) return null;
+        return (
+                <tr className="hover:bg-neutral-50 transition-colors">
+                        <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{user.name}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{event.title}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{registration._id ? new Date(parseInt(registration._id.toString().substring(0,8), 16) * 1000).toLocaleDateString() : ''}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                <button onClick={() => updateRegistrationStatus(registration._id || registration.id, RegistrationStatus.APPROVED)} className="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded-md text-xs font-semibold shadow-sm transition-colors">Approve</button>
+                                <button onClick={() => updateRegistrationStatus(registration._id || registration.id, RegistrationStatus.REJECTED)} className="text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded-md text-xs font-semibold shadow-sm transition-colors">Reject</button>
+                        </td>
+                </tr>
+        );
+    }, [getUserById, getEventById, updateRegistrationStatus]);
 
   const renderTable = (data: any[], head: string[], body: (item: any) => React.ReactNode, noDataMsg: string) => {
       if (data.length === 0) {
@@ -236,7 +238,7 @@ const OrganizerDashboardPage: React.FC = () => {
         </div>
       </div>
       
-      {/* Event Management */}
+
       <div className="bg-white p-6 rounded-xl shadow-sm border border-neutral-200/80">
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-neutral-800">Manage Events <span className="text-sm font-medium text-neutral-500">({events.length})</span></h2>
@@ -246,24 +248,24 @@ const OrganizerDashboardPage: React.FC = () => {
         </div>
         <div className="overflow-x-auto">
             {renderTable(events, ["Event Title", "Date", "Capacity", "Actions"], (event: Event) => (
-                <tr key={event.id} className="hover:bg-neutral-50 transition-colors">
+                <tr key={event._id || event.id} className="hover:bg-neutral-50 transition-colors">
                     <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{event.title}</td>
                     <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{new Date(event.date).toLocaleString()}</td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{registrations.filter(r => r.eventId === event.id && r.status === RegistrationStatus.APPROVED).length} / {event.maxCapacity}</td>
+                    <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{registrations.filter(r => r.eventId === (event._id || event.id) && r.status === RegistrationStatus.APPROVED).length} / {event.maxCapacity}</td>
                     <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button onClick={() => deleteEvent(event.id)} className="text-red-600 hover:text-red-800 transition-colors">Delete</button>
+                        <button onClick={() => deleteEvent(event._id || event.id)} className="text-red-600 hover:text-red-800 transition-colors">Delete</button>
                     </td>
                 </tr>
             ), "No events created yet.")}
         </div>
       </div>
       
-      {/* Admin: User Management */}
-      {currentUser?.role === UserRole.ADMIN && (
+
+    {(currentUser?.role === UserRole.ADMIN || currentUser?.role === 'ADMIN') && (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-neutral-200/80 space-y-6">
             <h2 className="text-xl font-bold text-neutral-800">User Management</h2>
             
-            {/* Organizers Table */}
+
             <div>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-semibold text-neutral-700">Organizers <span className="text-sm font-medium text-neutral-500">({users.filter(u => u.role === UserRole.ORGANIZER).length})</span></h3>
@@ -273,14 +275,14 @@ const OrganizerDashboardPage: React.FC = () => {
                 </div>
                 <div className="overflow-x-auto">
                     {renderTable(
-                        users.filter(user => user.role === UserRole.ORGANIZER), 
+                        users.filter(user => (user.role?.toUpperCase?.() === 'ORGANIZER')), 
                         ["Name", "Email", "Actions"], 
                         (user: User) => (
-                            <tr key={user.id} className="hover:bg-neutral-50 transition-colors">
+                            <tr key={user._id} className="hover:bg-neutral-50 transition-colors">
                                 <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{user.name}</td>
                                 <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{user.email}</td>
                                 <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button onClick={() => deleteUser(user.id)} className="text-red-600 hover:text-red-800 transition-colors">Delete</button>
+                                    <button onClick={() => deleteUser(user._id)} className="text-red-600 hover:text-red-800 transition-colors">Delete</button>
                                 </td>
                             </tr>
                         ), 
@@ -289,19 +291,19 @@ const OrganizerDashboardPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Students Table */}
+
             <div>
                 <h3 className="text-lg font-semibold text-neutral-700 mb-4">Students <span className="text-sm font-medium text-neutral-500">({users.filter(u => u.role === UserRole.STUDENT).length})</span></h3>
                 <div className="overflow-x-auto">
-                     {renderTable(
-                        users.filter(user => user.role === UserRole.STUDENT), 
+                    {renderTable(
+                        users.filter(user => (user.role?.toUpperCase?.() === 'STUDENT')), 
                         ["Name", "Email", "Actions"], 
                         (user: User) => (
-                            <tr key={user.id} className="hover:bg-neutral-50 transition-colors">
+                            <tr key={user._id} className="hover:bg-neutral-50 transition-colors">
                                 <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{user.name}</td>
                                 <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{user.email}</td>
                                 <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button onClick={() => deleteUser(user.id)} className="text-red-600 hover:text-red-800 transition-colors">Delete</button>
+                                    <button onClick={() => deleteUser(user._id)} className="text-red-600 hover:text-red-800 transition-colors">Delete</button>
                                 </td>
                             </tr>
                         ), 
@@ -312,38 +314,38 @@ const OrganizerDashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Admin: All Registrations */}
+
       {currentUser?.role === UserRole.ADMIN && selectedEventId === 'all' && (
         <TableWrapper title="All Registrations" count={registrations.length}>
-          {renderTable(registrations, ["Applicant", "Event", "Status"], (reg: Registration) => {
-            const user = getUserById(reg.userId);
-            const event = getEventById(reg.eventId);
-            return (
-                <tr key={reg.id} className="hover:bg-neutral-50 transition-colors">
-                    <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{user?.name || 'Unknown User'}</td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{event?.title || 'Unknown Event'}</td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm">{getStatusBadge(reg.status)}</td>
-                </tr>
-            );
-          }, "No registrations on the platform.")}
+                    {renderTable(registrations, ["Applicant", "Event", "Status"], (reg: Registration) => {
+                        const user = getUserById(reg.userId);
+                        const event = getEventById(reg.eventId);
+                        return (
+                                <tr key={reg._id || reg.id} className="hover:bg-neutral-50 transition-colors">
+                                        <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{user?.name || 'Unknown User'}</td>
+                                        <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{event?.title || 'Unknown Event'}</td>
+                                        <td className="px-5 py-4 whitespace-nowrap text-sm">{getStatusBadge(reg.status as RegistrationStatus)}</td>
+                                </tr>
+                        );
+                    }, "No registrations on the platform.")}
         </TableWrapper>
       )}
 
-      {/* Pending Registrations */}
+
       <TableWrapper title="Pending Approval" count={pendingRegistrations.length}>
-          {renderTable(pendingRegistrations, ["Applicant", "Event", "Date", "Actions"], (reg: Registration) => <RegistrationRow key={reg.id} registration={reg} />,"No pending registrations for the selected event(s).")}
+          {renderTable(pendingRegistrations, ["Applicant", "Event", "Date", "Actions"], (reg: Registration) => <RegistrationRow key={reg._id || reg.id} registration={reg} />,"No pending registrations for the selected event(s).")}
       </TableWrapper>
 
-      {/* Processed Registrations */}
+
       <TableWrapper title="Registration History" count={processedRegistrations.length}>
           {renderTable(processedRegistrations, ["Applicant", "Event", "Status"], (reg: Registration) => {
             const user = getUserById(reg.userId);
             const event = getEventById(reg.eventId);
             return (
-                <tr key={reg.id} className="hover:bg-neutral-50 transition-colors">
+                <tr key={reg._id || reg.id} className="hover:bg-neutral-50 transition-colors">
                     <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{user?.name || '...'}</td>
                     <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{event?.title || '...'}</td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{getStatusBadge(reg.status)}</td>
+                    <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{getStatusBadge(reg.status as RegistrationStatus)}</td>
                 </tr>
             );
           }, "No registration history for the selected event(s).")}

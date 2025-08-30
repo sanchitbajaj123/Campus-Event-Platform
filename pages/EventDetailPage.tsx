@@ -4,8 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { UserRole, RegistrationStatus } from '../types';
 
 const EventDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const eventId = Number(id);
+  const { id: eventId } = useParams<{ id: string }>();
   const { 
     getEventById, 
     currentUser,
@@ -28,7 +27,7 @@ const EventDetailPage: React.FC = () => {
   }
 
   const attendeeCount = getApprovedAttendeeCount(eventId);
-  const registrationStatus = getUserRegistrationStatus(eventId, currentUser?.id);
+  const registrationStatus = getUserRegistrationStatus(eventId, currentUser?._id || currentUser?.id);
 
   const formattedDate = new Date(event.date).toLocaleString('en-US', {
     weekday: 'long',
@@ -42,30 +41,29 @@ const EventDetailPage: React.FC = () => {
   const capacityPercentage = event.maxCapacity > 0 ? (attendeeCount / event.maxCapacity) * 100 : 0;
   
   const renderRegistrationButton = () => {
-    if (!currentUser || currentUser.role !== UserRole.STUDENT) {
+    if (!currentUser || (currentUser.role !== UserRole.STUDENT && currentUser.role !== 'STUDENT')) {
       return null;
     }
-    
     const baseStyle = "w-full sm:w-auto px-8 py-3 text-base font-semibold rounded-lg shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2";
     const disabledStyle = "cursor-not-allowed opacity-70";
 
-    if (registrationStatus === RegistrationStatus.APPROVED) {
-      return <button disabled className={`${baseStyle} bg-green-500 text-white ${disabledStyle}`}>Registered</button>;
-    }
     if (registrationStatus === RegistrationStatus.PENDING) {
       return <button disabled className={`${baseStyle} bg-yellow-500 text-white ${disabledStyle}`}>Registration Pending</button>;
+    }
+    if (registrationStatus === RegistrationStatus.APPROVED) {
+      return <button disabled className={`${baseStyle} bg-green-500 text-white ${disabledStyle}`}>Registered</button>;
     }
     if (registrationStatus === RegistrationStatus.REJECTED) {
       return <button disabled className={`${baseStyle} bg-red-500 text-white ${disabledStyle}`}>Registration Rejected</button>;
     }
 
     if (attendeeCount >= event.maxCapacity) {
-        return <button disabled className={`${baseStyle} bg-neutral-400 text-white ${disabledStyle}`}>Event Full</button>;
+      return <button disabled className={`${baseStyle} bg-neutral-400 text-white ${disabledStyle}`}>Event Full</button>;
     }
 
     return (
       <button 
-        onClick={() => registerForEvent(event.id)}
+        onClick={() => registerForEvent(event._id || event.id)}
         className={`${baseStyle} text-white bg-primary hover:bg-primary-light focus:ring-primary transform hover:scale-105`}
       >
         Register for this Event

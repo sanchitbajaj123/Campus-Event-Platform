@@ -21,20 +21,20 @@ const SignUpPage: React.FC = () => {
   const { signUp } = useAppContext();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (!name.trim()) {
-        setError('Please enter your full name.');
-        return;
-    }
-    const result = signUp(name, email, password);
-    if (!result.success) {
-      setError(result.message || 'Could not create account.');
-    } else {
-      navigate('/');
-    }
-  };
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        if (!name.trim()) {
+            setError('Please enter your full name.');
+            return;
+        }
+        const result = await signUp(name, email, password);
+        if (!result.success) {
+            setError(result.message || 'Could not create account.');
+        } else {
+            navigate('/');
+        }
+    };
 
   return (
      <div className="w-full max-w-md space-y-8">
