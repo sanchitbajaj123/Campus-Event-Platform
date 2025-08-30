@@ -43,17 +43,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/users').then(res => res.json()).then(setUsers);
-    fetch('http://localhost:5000/api/events').then(res => res.json()).then(setEvents);
-    fetch('http://localhost:5000/api/registrations').then(res => res.json()).then(setRegistrations);
+  fetch('https://campus-event-platform-ruby.vercel.app/api/users').then(res => res.json()).then(setUsers);
+  fetch('https://campus-event-platform-ruby.vercel.app/api/events').then(res => res.json()).then(setEvents);
+  fetch('https://campus-event-platform-ruby.vercel.app/api/registrations').then(res => res.json()).then(setRegistrations);
   }, []);
 
 
 
   const refreshAll = useCallback(() => {
-    fetch('http://localhost:5000/api/users').then(res => res.json()).then(setUsers);
-    fetch('http://localhost:5000/api/events').then(res => res.json()).then(setEvents);
-    fetch('http://localhost:5000/api/registrations').then(res => res.json()).then(setRegistrations);
+  fetch('https://campus-event-platform-ruby.vercel.app/api/users').then(res => res.json()).then(setUsers);
+  fetch('https://campus-event-platform-ruby.vercel.app/api/events').then(res => res.json()).then(setEvents);
+  fetch('https://campus-event-platform-ruby.vercel.app/api/registrations').then(res => res.json()).then(setRegistrations);
   }, []);
 
 
@@ -90,7 +90,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const login = useCallback(async (email: string, password?: string) => {
     try {
-      const res = await fetch('http://localhost:5000/api/login', {
+  const res = await fetch('https://campus-event-platform-ruby.vercel.app/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -113,7 +113,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const signUp = useCallback(async (name: string, email: string, password?: string) => {
     try {
-      const res = await fetch('http://localhost:5000/api/signup', {
+  const res = await fetch('https://campus-event-platform-ruby.vercel.app/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password })
@@ -142,7 +142,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addOrganizer = useCallback(async (name: string, email: string, password?: string) => {
     try {
-      const res = await fetch('http://localhost:5000/api/users', {
+  const res = await fetch('https://campus-event-platform-ruby.vercel.app/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role: 'ORGANIZER' })
@@ -168,7 +168,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 
   const addEvent = useCallback(async (eventData: Omit<Event, 'id'>) => {
-    await fetch('http://localhost:5000/api/events', {
+  await fetch('https://campus-event-platform-ruby.vercel.app/api/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(eventData)
@@ -179,7 +179,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteEvent = useCallback(async (eventId: string) => {
     if (window.confirm('Are you sure you want to delete this event? This will also remove all associated registrations.')) {
-      await fetch(`http://localhost:5000/api/events/${eventId}`, { method: 'DELETE' });
+  await fetch(`https://campus-event-platform-ruby.vercel.app/api/events/${eventId}`, { method: 'DELETE' });
       refreshAll();
     }
   }, [refreshAll]);
@@ -191,7 +191,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return;
     }
     if (window.confirm('Are you sure you want to delete this user? This will remove them and all their event registrations.')) {
-      await fetch(`http://localhost:5000/api/users/${userId}`, { method: 'DELETE' });
+  await fetch(`https://campus-event-platform-ruby.vercel.app/api/users/${userId}`, { method: 'DELETE' });
       refreshAll();
     }
   }, [currentUser, refreshAll]);
@@ -209,7 +209,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       alert("You are already registered or your registration is pending.");
       return;
     }
-    await fetch('http://localhost:5000/api/registrations', {
+  await fetch('https://campus-event-platform-ruby.vercel.app/api/registrations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ eventId, userId: currentUser._id, status: 'PENDING' })
@@ -219,7 +219,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 
   const updateRegistrationStatus = async (registrationId: string, status: RegistrationStatus) => {
-    await fetch(`http://localhost:5000/api/registrations/${registrationId}`, {
+  await fetch(`https://campus-event-platform-ruby.vercel.app/api/registrations/${registrationId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
