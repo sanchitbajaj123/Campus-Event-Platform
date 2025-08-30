@@ -36,6 +36,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [events, setEvents] = useState<Event[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
 
+  // normalize status string to uppercase for reliable comparisons (e.g. 'Approved' or 'APPROVED')
+  const normalizeStatus = (s: any) => (s ? String(s).toUpperCase() : '');
+
   const fetchUsers = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/users`);
@@ -247,14 +250,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   );
 
   const getEventById = useCallback(
-    (eventId: string) => {
+    (eventId: string | any) => {
+      if (!eventId) return undefined;
+      // If a populated event object was passed, try to resolve to the canonical event in state,
+      // otherwise return the object directly so callers can read fields like title.
+      if (typeof eventId === 'object') {
+        const id = eventId._id || eventId.id;
+        const found = events.find((e: any) => e._id === id || e.id === id);
+        return found || eventId;
+      }
       return events.find((e: any) => e._id === eventId || e.id === eventId);
     },
     [events]
   );
 
   const getUserById = useCallback(
-    (userId: string) => {
+    (userId: string | any) => {
+      if (!userId) return undefined;
+      // Handle populated user object (from registrations/populated) or id string
+      if (typeof userId === 'object') {
+        const id = userId._id || userId.id;
+        const found = users.find((u: any) => u._id === id || u.id === id);
+        return found || userId;
+      }
       return users.find((u: any) => u._id === userId || u.id === userId);
     },
     [users]
@@ -274,7 +292,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     (eventId: string) => {
       return registrations.filter((r: any) => {
         const rEventId = r.eventId && r.eventId._id ? r.eventId._id : r.eventId;
-        return rEventId === eventId && r.status === RegistrationStatus.APPROVED;
+        return rEventId === eventId && normalizeStatus(r.status) === 'APPROVED';
       }).length;
     },
     [registrations]

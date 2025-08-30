@@ -153,7 +153,7 @@ const TableWrapper: React.FC<{ children: React.ReactNode, title: string, count: 
 );
 
 const OrganizerDashboardPage: React.FC = () => {
-  const { events, registrations, users, getEventById, getUserById, currentUser, deleteEvent, deleteUser, updateRegistrationStatus } = useAppContext();
+    const { events, registrations, users, getEventById, getUserById, getApprovedAttendeeCount, currentUser, deleteEvent, deleteUser, updateRegistrationStatus } = useAppContext();
   const [selectedEventId, setSelectedEventId] = useState<string>('all');
   const [showAddEventForm, setShowAddEventForm] = useState(false);
   const [showAddOrganizerModal, setShowAddOrganizerModal] = useState(false);
@@ -166,8 +166,14 @@ const OrganizerDashboardPage: React.FC = () => {
         });
     }, [registrations, selectedEventId]);
 
-    const pendingRegistrations = useMemo(() => filteredRegistrations.filter(r => (r.status === RegistrationStatus.PENDING || r.status === 'PENDING')), [filteredRegistrations]);
-    const processedRegistrations = useMemo(() => filteredRegistrations.filter(r => (r.status !== RegistrationStatus.PENDING && r.status !== 'PENDING')).sort((a,b) => {
+    const pendingRegistrations = useMemo(() => filteredRegistrations.filter(r => {
+        const status = (r.status || '').toString().toUpperCase();
+        return status === 'PENDING';
+    }), [filteredRegistrations]);
+    const processedRegistrations = useMemo(() => filteredRegistrations.filter(r => {
+        const status = (r.status || '').toString().toUpperCase();
+        return status !== 'PENDING';
+    }).sort((a,b) => {
         const aTime = a._id ? parseInt(a._id.toString().substring(0,8), 16) : 0;
         const bTime = b._id ? parseInt(b._id.toString().substring(0,8), 16) : 0;
         return bTime - aTime;
@@ -182,10 +188,10 @@ const OrganizerDashboardPage: React.FC = () => {
                         <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{user.name}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{event.title}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{registration._id ? new Date(parseInt(registration._id.toString().substring(0,8), 16) * 1000).toLocaleDateString() : ''}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                <button onClick={() => updateRegistrationStatus(registration._id || registration.id, RegistrationStatus.APPROVED)} className="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded-md text-xs font-semibold shadow-sm transition-colors">Approve</button>
-                                <button onClick={() => updateRegistrationStatus(registration._id || registration.id, RegistrationStatus.REJECTED)} className="text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded-md text-xs font-semibold shadow-sm transition-colors">Reject</button>
-                        </td>
+            <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                <button onClick={() => updateRegistrationStatus(registration._id || registration.id, 'APPROVED' as any)} className="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded-md text-xs font-semibold shadow-sm transition-colors">Approve</button>
+                <button onClick={() => updateRegistrationStatus(registration._id || registration.id, 'REJECTED' as any)} className="text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded-md text-xs font-semibold shadow-sm transition-colors">Reject</button>
+            </td>
                 </tr>
         );
     }, [getUserById, getEventById, updateRegistrationStatus]);
@@ -254,10 +260,7 @@ const OrganizerDashboardPage: React.FC = () => {
                 <tr key={event._id || event.id} className="hover:bg-neutral-50 transition-colors">
                     <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">{event.title}</td>
                     <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{new Date(event.date).toLocaleString()}</td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{registrations.filter(r => {
-                        const rEventId = r.eventId && (r.eventId._id ? r.eventId._id : r.eventId);
-                        return rEventId === (event._id || event.id) && r.status === RegistrationStatus.APPROVED;
-                    }).length} / {event.maxCapacity}</td>
+                    <td className="px-5 py-4 whitespace-nowrap text-sm text-neutral-500">{getApprovedAttendeeCount(event._id || event.id)} / {event.maxCapacity}</td>
                     <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button onClick={() => deleteEvent(event._id || event.id)} className="text-red-600 hover:text-red-800 transition-colors">Delete</button>
                     </td>
