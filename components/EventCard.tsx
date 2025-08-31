@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Event } from '../types';
+import { Event, RegistrationStatus, UserRole } from '../types';
 import { useAppContext } from '../context/AppContext';
 
 interface EventCardProps {
@@ -26,12 +27,30 @@ const UsersIcon = () => (
     </svg>
 );
 
+
+const statusBadge = (status: string | null) => {
+  if (!status) return null;
+  const s = status.toUpperCase();
+  let color = '';
+  if (s === 'PENDING') color = 'bg-yellow-100 text-yellow-800';
+  else if (s === 'APPROVED') color = 'bg-green-100 text-green-800';
+  else if (s === 'REJECTED') color = 'bg-red-100 text-red-800';
+  else color = 'bg-gray-100 text-gray-800';
+  return <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${color}`}>{s.charAt(0) + s.slice(1).toLowerCase()}</span>;
+};
+
 const EventCard: React.FC<EventCardProps> = ({ event }) => {
-    const { getApprovedAttendeeCount } = useAppContext();
-        const attendeeCount = getApprovedAttendeeCount(event._id || event.id);
-        const formattedDate = new Date(event.date).toLocaleDateString('en-US', {
-                month: 'short', day: 'numeric', year: 'numeric'
-        });
+    const { getApprovedAttendeeCount, getUserRegistrationStatus, currentUser } = useAppContext();
+    const attendeeCount = getApprovedAttendeeCount(event._id || event.id);
+    const formattedDate = new Date(event.date).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+    });
+
+    // Show registration status for students only
+    let regStatus: string | null = null;
+    if (currentUser && (currentUser.role === UserRole.STUDENT || currentUser.role === 'STUDENT')) {
+      regStatus = getUserRegistrationStatus(event._id || event.id, currentUser._id || currentUser.id);
+    }
 
     return (
         <Link to={`/event/${event._id || event.id}`} className="block group bg-white rounded-xl shadow-sm border border-neutral-200/80 overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300">
@@ -45,7 +64,9 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
                 </div>
             </div>
             <div className="p-5 flex flex-col flex-grow">
-                <p className="text-sm font-medium text-primary">{event.organizer}</p>
+                <p className="text-sm font-medium text-primary">{event.organizer}
+                  {regStatus && statusBadge(regStatus)}
+                </p>
                 <h3 className="mt-1 text-lg font-bold text-neutral-900 leading-tight">{event.title}</h3>
                 <p className="mt-2 text-neutral-600 text-sm flex-grow">{event.description}</p>
                 <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-col space-y-2 text-sm">

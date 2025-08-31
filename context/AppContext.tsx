@@ -26,17 +26,14 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Allow overriding the API base via Vite env var VITE_API_BASE when running locally.
-  // Example: create a .env file with VITE_API_BASE=http://localhost:5000/api
-  const { VITE_API_BASE } = import.meta.env as any;
-  const API_BASE = VITE_API_BASE || 'https://campus-event-platform-ruby.vercel.app/api';
+
+  const API_BASE = 'https://campus-event-platform-ruby.vercel.app/api';
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
 
-  // normalize status string to uppercase for reliable comparisons (e.g. 'Approved' or 'APPROVED')
   const normalizeStatus = (s: any) => (s ? String(s).toUpperCase() : '');
 
   const fetchUsers = useCallback(async () => {

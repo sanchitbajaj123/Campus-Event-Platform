@@ -19,13 +19,14 @@ const Header: React.FC = () => {
     const { currentUser, logout } = useAppContext();
     const navigate = useNavigate();
 
+
     if (!currentUser) return null;
 
-    const isPrivilegedUser = currentUser.role === UserRole.ORGANIZER || currentUser.role === UserRole.ADMIN;
+    const isPrivilegedUser = currentUser.role === UserRole.ORGANIZER || currentUser.role === UserRole.ADMIN || currentUser.role === 'ORGANIZER' || currentUser.role === 'ADMIN';
 
     const linkStyle = "relative px-3 py-2 rounded-md text-sm font-medium text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-all duration-200 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 after:w-0 after:h-0.5 after:bg-primary after:transition-all after:duration-300";
     const activeLinkStyle = "text-primary font-semibold after:w-1/2 bg-primary/10";
-    
+
     const handleLogout = () => {
         logout();
         navigate('/login');
@@ -69,6 +70,6 @@ const Header: React.FC = () => {
             </nav>
         </header>
     );
-};
 
+};
 export default Header;
