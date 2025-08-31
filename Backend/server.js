@@ -11,7 +11,7 @@ app.use(express.json());
 
 mongoose.connect(process.env.MONGOURL, { useNewUrlParser: true, useUnifiedTopology: true });
 
-// User routes
+
 app.post('/api/signup', async (req, res) => {
 	try {
 		const user = new User({ ...req.body, role: 'STUDENT' });
@@ -29,7 +29,7 @@ app.post('/api/login', async (req, res) => {
 });
 app.get('/api/users', async (req, res) => res.json(await User.find()));
 
-// Allow admin to create organizers or users with any role
+
 app.post('/api/users', async (req, res) => {
 	try {
 		const user = new User(req.body);
@@ -45,7 +45,7 @@ app.delete('/api/users/:id', async (req, res) => {
 	res.json({ success: true });
 });
 
-// Event routes
+
 app.get('/api/events', async (req, res) => res.json(await Event.find()));
 app.post('/api/events', async (req, res) => {
 	const event = new Event(req.body);
@@ -58,13 +58,11 @@ app.delete('/api/events/:id', async (req, res) => {
 	res.json({ success: true });
 });
 
-// Registration routes
+
 app.get('/api/registrations', async (req, res) => res.json(await Registration.find()));
-// Populated registrations route used by frontend (returns event and user objects inside each registration)
 app.get('/api/registrations/populated', async (req, res) => {
 	try {
 		const regs = await Registration.find().populate('userId').populate('eventId');
-		// normalize to same shape frontend expects (userId and eventId may be objects)
 		const normalized = regs.map(r => ({
 			_id: r._id,
 			eventId: r.eventId,

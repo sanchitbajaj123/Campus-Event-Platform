@@ -5,7 +5,7 @@ const UserSchema = new mongoose.Schema({
 	name: String,
 	email: { type: String, unique: true },
 	password: String,
-	role: String, // 'STUDENT', 'ORGANIZER', 'ADMIN'
+	role: String, 
 });
 
 const EventSchema = new mongoose.Schema({
@@ -22,7 +22,7 @@ const EventSchema = new mongoose.Schema({
 const RegistrationSchema = new mongoose.Schema({
 	eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
 	userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-	status: String, // 'PENDING', 'APPROVED', 'REJECTED'
+	status: String, 
 });
 
 module.exports = {

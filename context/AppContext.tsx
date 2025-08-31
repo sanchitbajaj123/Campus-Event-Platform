@@ -52,13 +52,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const fetchRegistrations = useCallback(async () => {
     try {
-      // populated route returns user and event info along with registration
       const res = await fetch(`${API_BASE}/registrations/populated`);
       if (res.ok) {
         const data = await res.json();
         setRegistrations(data);
       } else {
-        // fallback to unpopulated registrations if populated route missing
         const res2 = await fetch(`${API_BASE}/registrations`);
         if (res2.ok) setRegistrations(await res2.json());
       }
@@ -69,7 +67,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     void fetchUsers();
     void fetchEvents();
     void fetchRegistrations();
-    // restore last logged in user if present
+
     const saved = localStorage.getItem('lastLoggedInUser');
     if (saved) {
       try {

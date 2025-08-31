@@ -96,14 +96,14 @@ const AddOrganizerForm: React.FC<{ onFormClose: () => void }> = ({ onFormClose }
         setOrganizerData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         if (!organizerData.name || !organizerData.email || !organizerData.password) {
             alert('Please fill out all fields.');
             return;
         }
-        const result = addOrganizer(organizerData.name, organizerData.email, organizerData.password);
+        const result = await addOrganizer(organizerData.name, organizerData.email, organizerData.password);
         if (!result.success) {
             setError(result.message || 'Could not create organizer.');
         } else {
